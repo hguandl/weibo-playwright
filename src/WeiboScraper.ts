@@ -66,7 +66,20 @@ export default class WeiboScraper {
   }
 
   private process = async (response: Response) => {
-    const payload = await response.json();
+    const text = await response.text();
+    if (!text) return;
+
+    const payload = (() => {
+      try {
+        return JSON.parse(text);
+      } catch (err) {
+        logger.error(err, "Failed to parse JSON response: %s", text);
+        return null;
+      }
+    })();
+    if (!payload) {
+      return;
+    }
 
     if (!this.uname || !this.containerId) {
       const isIndex = IndexSchema.safeParse(payload);
