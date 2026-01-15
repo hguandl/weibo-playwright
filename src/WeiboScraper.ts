@@ -139,8 +139,28 @@ export default class WeiboScraper {
       }
 
       const text = mblog.text
-        .replace(/<a [^>]+>.+?<\/a>/g, "")
-        .replace(/<br\s*\/>/g, "\n")
+        .replace(/<br\s*\/?>/gi, "\n")
+        .replace(/<img[^>]+alt=["']([^"']+)["'][^>]*>/g, "$1")
+        .replace(/<a[^>]*>([\s\S]*?)<\/a>/gi, (_m, p1) => {
+          const label = ((p1 as string) ?? "").replace(/<[^>]+>/g, "");
+          if (label === "全文") return "";
+          if (label === "明日方舟") return "";
+          if (label.startsWith("#") && label.endsWith("#")) return "";
+          return label;
+        })
+        .replace(/<[^>]+>/g, "")
+        .replace(/&[a-z\d#]+;/gi, (match: string): string => {
+          const entities: Record<string, string> = {
+            "&nbsp;": " ",
+            "&lt;": "<",
+            "&gt;": ">",
+            "&amp;": "&",
+            "&quot;": '"',
+          };
+          return entities[match.toLowerCase()] || match;
+        })
+        .replace(/[^\S\r\n]+\n/g, "\n")
+        .replace(/\n{3,}/g, "\n\n")
         .trim();
       if (
         text.includes("微博官方唯一抽奖工具") &&
